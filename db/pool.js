@@ -1,15 +1,15 @@
-require("dotenv").config();
+const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.local';
+require("dotenv").config({ path: envFile });
+// require("dotenv").config();
 const { Pool } = require("pg");
 
 const pool = new Pool({
-  host: process.env.DB_HOST,
   user: process.env.DB_USER,
+  host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
-  ssl: {
-    rejectUnauthorized: false,  // This allows connecting without verifying SSL cert (safe for dev and many managed DBs)
-  },
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });
 
 module.exports = pool;
