@@ -1,26 +1,40 @@
 require("dotenv").config();
-const {Client} = require("pg");
-const SQL=`
+const { Client } = require("pg");
+
+const SQL = `
 CREATE TABLE IF NOT EXISTS usernames (
-id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-username VARCHAR (255)
+  id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  username VARCHAR(255)
 );
 
-INSERT INTO usernames (username) VALUES ('sneha'),('mitthu'),('ayu'),('vishal'),('poky');
+-- Only insert if table is empty
+INSERT INTO usernames (username)
+SELECT * FROM (VALUES
+  ('sneha'),
+  ('mitthu'),
+  ('ayu'),
+  ('vishal'),
+  ('poky')
+) AS new_users(username)
+WHERE NOT EXISTS (SELECT 1 FROM usernames);
 `;
 
-async function main() {
-    const client = new Client({
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
+async function populate() {
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
 
-      });
+  try {
     await client.connect();
     await client.query(SQL);
+    console.log("Database populated.");
+  } catch (err) {
+    console.error("Error populating database:", err);
+  } finally {
     await client.end();
-    console.log("done");
+  }
 }
-main();
+
+// Export it so you can require in app.js
+module.exports = populate;
